@@ -212,3 +212,17 @@ setInterval(function () {
   else if (host && (g.phase === 'talk' || g.phase === 'intro')) { autoAt = now; act('skip'); }
 }, 60);
 renderTitle();
+
+// ---- ひろばの「みんなの部屋」：同じメンバーで自動入室＋ホストは「つぎのゲーム」 ----
+if (PARTY) {
+  FuuParty.init({ game: 'zurekko',
+    isHost: function () { return !!host && !host.room.solo; },
+    inGame: function () { var R = host && host.room; return !!R && ['lobby', 'end', 'over', 'result'].indexOf(R.phase) < 0 && !(R.G && (R.G.over || R.G.phase === 'end' || R.G.phase === 'over')); },
+    broadcast: function (m) { if (host) Object.keys(host.conns).forEach(function (cid) { try { host.conns[cid].send(m); } catch (e) {} }); } });
+  FuuParty.status = function () { return host ? { host: 1, n: Object.keys(host.conns).filter(function (k) { return host.conns[k].open; }).length } : { host: 0, joined: !!(client && client.everJoined) }; };
+  $('nameIn').value = cleanName(PARTY.name) || 'ななし';
+  setTimeout(function () {
+    if (PARTY.host) { store(LS_HOST, null); startHost(cleanName(PARTY.name) || 'ホスト', null, false); }
+    else startClient(PARTY.code, cleanName(PARTY.name) || 'ななし');
+  }, 50);
+}
